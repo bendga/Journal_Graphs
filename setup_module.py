@@ -21,7 +21,7 @@ def init_setup():
         
     idx = 2
     print('loading data')
-    # load the data
+    # load the data    
     cumulants_vec = save_and_load_list(2, 'cumulants_vec', idx)
     cum_dx_vec = save_and_load_list(2, 'cum_dx_vec', idx)
     cum_real_vec = save_and_load_list(2, 'cum_real_vec', idx)
@@ -61,6 +61,7 @@ def import_data(filepath):
     save_and_load_list(cum_real_vec, 'cum_real_vec', idx)
     save_and_load_list(cum_imag_vec, 'cum_imag_vec', idx)
     save_and_load_list(cum_dx_vec, 'cum_dx_vec', idx)
+
     print('save is done')
     
 def process_data(data,modulation_onehot,snr):
