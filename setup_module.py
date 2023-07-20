@@ -2,12 +2,8 @@ import h5py
 import numpy as np
 from numpy import abs as abs
 from numpy import log10 as log10
-
-# import openpyxl
 import pandas as pd
 import pickle
-
-# import matplotlib.pyplot as plt
 import os
 
 
@@ -115,8 +111,8 @@ def process_data(data, modulation_onehot, snr):
         modulation_idx = np.nonzero(modulation_onehot[idx])[0][0]
         current_modulation = mods_total[modulation_idx]
         # Skip the sample if it's below the threshold SNR or if the modulation type is not in the target list
-        # if snr[idx][0] < -10 or current_modulation not in mod_target:
-        #     continue
+        if snr[idx][0] < -10 or current_modulation not in mod_target:
+            continue
         if idx % 10000 == 0:
             print(
                 "we have reached ",
