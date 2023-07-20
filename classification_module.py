@@ -13,13 +13,15 @@ import seaborn as sns
 
 def init_classification(samples, labels, snr, name, groups, easy_mode, train_tresh):
     
-    labeling = str(train_tresh)+'_SNR_train_'+name
+    # labeling = 'train_for_'+str(train_tresh)+'_SNR_'+name
+    print('change')
+    labeling = f"train_for_{train_tresh}_SNR_{name}"
     x_train, x_test, y_train, y_test,snr_test = data_spliting(samples,labels,snr,train_tresh)
     
     classifier = DecisionTreeClassifier(max_depth=8)
     classifier.fit(x_train, y_train)
     
-    os.makedirs(name, exist_ok=True)
+    os.mkdir(labeling)
     print("Classify per SNR")
     accuracy_data = detection_per_snr(x_test, y_test, snr_test, classifier, labeling)
     
@@ -90,7 +92,8 @@ def combine_accuracy_graphs(accuracy_data1, accuracy_data2, accuracy_data3, trai
     if train_tresh>0:
         plt.savefig(str(train_tresh)+"_SNR_train_combined_accuracy.png")
     else: plt.savefig("combined_accuracy.png")
-    plt.close(fig)
+    plt.clf()
+    plt.close()
 
 def detection_per_snr(x_test, y_test, snr_test, classifier, name):
     
@@ -146,6 +149,7 @@ def detection_per_label(x_test, y_test, snr_test, classifier, groups, name):
     plt.savefig(file_path)
     print("saved plots")
     plt.clf()
+    plt.close()
 
 def plot_average_easy(samples, snr, labels, name):
     features = samples.shape[1]  # Number of features
@@ -173,6 +177,7 @@ def plot_average_easy(samples, snr, labels, name):
         file_path = os.path.join(name, f"feature_{feature_idx + 1}.png")
         plt.savefig(file_path)
         print(f"Saved plot {file_path}")
+        plt.clf()
         plt.close()
 
 def plot_average_hard(samples, snr, labels, groups, name):
@@ -212,15 +217,19 @@ def plot_average_hard(samples, snr, labels, groups, name):
         file_path = os.path.join(name, f"feature_{feature_idx + 1}.png")
         plt.savefig(file_path)
         print(f"Saved plot {file_path}")
+        plt.clf()
         plt.close()
         
 def plot_confusion_matrix(y_true, y_pred, labels, snr, name):
     # os.makedirs("confusion_matrix", exist_ok=True)
     cm = confusion_matrix(y_true, y_pred, labels=labels)
+    accuracy = accuracy_score(y_true, y_pred)
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels)
     plt.xlabel("Predicted Labels")
     plt.ylabel("True Labels")
-    plt.title(f"Confusion Matrix for SNR={snr}dB")
+    plt.title(f"Confusion Matrix for SNR={snr}dB, Acc={accuracy}%")
     file_path = os.path.join(name, f"SNR={snr}.png")
     plt.savefig(file_path)
+    plt.clf()
+    plt.close()
