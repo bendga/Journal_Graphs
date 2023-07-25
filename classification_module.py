@@ -37,7 +37,7 @@ def init_classification(samples, labels, snr, name, groups, easy_mode, train_tre
 def data_spliting(samples,labels,snr,train_tresh):
     
     if train_tresh>0:
-        mask = snr<train_tresh
+        mask = snr>train_tresh
         samples_mask = samples[mask]
         labels_mask = labels[mask]
         snr_mask = snr[mask]
@@ -66,18 +66,11 @@ def data_spliting(samples,labels,snr,train_tresh):
         snr_test = snr[test_indices]
     return x_train, x_test, y_train, y_test,snr_test
 
-def combine_accuracy_graphs(accuracy_data1, accuracy_data2, accuracy_data3, train_tresh):
+def combine_accuracy_graphs(*args):
     fig, ax = plt.subplots()
 
-    ax.plot(
-        accuracy_data1["snr"], accuracy_data1["accuracy"], label=accuracy_data1["name"]
-    )
-    ax.plot(
-        accuracy_data2["snr"], accuracy_data2["accuracy"], label=accuracy_data2["name"]
-    )
-    ax.plot(
-        accuracy_data3["snr"], accuracy_data3["accuracy"], label=accuracy_data3["name"]
-    )
+    for accuracy_data in args:
+        ax.plot(accuracy_data["snr"], accuracy_data["accuracy"], label=accuracy_data["name"])
 
     ax.set_xlabel("SNR")
     ax.set_ylabel("Accuracy")
@@ -86,12 +79,10 @@ def combine_accuracy_graphs(accuracy_data1, accuracy_data2, accuracy_data3, trai
     ax.yaxis.set_major_locator(MultipleLocator(0.1))
     ax.xaxis.set_major_locator(MultipleLocator(2))
     ax.grid(which='major')
-    # Specify the folder name
-    # Save the figure in the specified folder
-    # file_path = os.path.join("plots", "combined_accuracy.png")
-    if train_tresh>0:
-        plt.savefig(str(train_tresh)+"_SNR_train_combined_accuracy.png")
-    else: plt.savefig("combined_accuracy.png")
+
+    num_files_saved = sum(1 for file in os.listdir('.') if file.startswith('combine_accuracy_graph_'))
+    file_path = f'combine_accuracy_graph_{num_files_saved + 1}.png'
+    plt.savefig(file_path)
     plt.clf()
     plt.close()
 
@@ -118,7 +109,7 @@ def detection_per_label(x_test, y_test, snr_test, classifier, groups, name):
     unique_snr = np.unique(snr_test)
     unique_labels = np.unique(y_test)
     # num_plots = len(unique_labels) // 8  # Number of plots needed
-    num_plots = 3  # Number of plots needed
+    num_plots = len(groups)  # Number of plots needed
 
     fig, axs = plt.subplots(nrows=num_plots, ncols=1, figsize=(10, 6 * num_plots))
     # for i, label_group in enumerate(np.array_split(unique_labels, num_plots)):
@@ -154,7 +145,8 @@ def detection_per_label(x_test, y_test, snr_test, classifier, groups, name):
 def plot_average_easy(samples, snr, labels, name):
     features = samples.shape[1]  # Number of features
     unique_labels = np.unique(labels)
-    os.makedirs("plots", exist_ok=True)
+    cmap = plt.get_cmap('tab20')
+    num_colors = 20
     for feature_idx in range(features):
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.set_xlabel('SNR')
@@ -171,8 +163,12 @@ def plot_average_easy(samples, snr, labels, name):
                 ratio = (variance)/np.power(average,2)
                 ratio = np.log10(ratio)
                 average_values.append(ratio)
-            ax.plot(snr_values, average_values, label=label)
+            color = cmap(i % num_colors)
+            ax.plot(snr_values, average_values, label=label, color=color)
         ax.set_title(f'Feature {feature_idx + 1}')
+        ax.yaxis.set_major_locator(MultipleLocator(0.25))
+        ax.xaxis.set_major_locator(MultipleLocator(2))
+        ax.grid(which='major')
         ax.legend()
         file_path = os.path.join(name, f"feature_{feature_idx + 1}.png")
         plt.savefig(file_path)
@@ -182,9 +178,9 @@ def plot_average_easy(samples, snr, labels, name):
 
 def plot_average_hard(samples, snr, labels, groups, name):
     features = samples.shape[1]  # Number of features
-    unique_snr = np.unique(snr)
+    snr_values = np.unique(snr)
 
-    os.makedirs("plots", exist_ok=True)
+    # os.makedirs("plots", exist_ok=True)
 
     for feature_idx in range(features):
         fig, axs = plt.subplots(nrows=3, ncols=1, figsize=(8, 18))
@@ -197,15 +193,13 @@ def plot_average_hard(samples, snr, labels, groups, name):
             for label in label_group:
                 mask = labels == label
                 average_values = []
-                snr_values = np.unique(snr)
-
                 for snr_val in snr_values:
                     feature_values = samples[mask & (snr == snr_val), feature_idx]
                     average = np.mean(feature_values)
                     variance = np.var(feature_values)
                     ratio = (variance)/np.power(average,2)
                     # ratio = np.power(average,1)/variance
-                    # ratio = np.log10(ratio)
+                    ratio = np.log10(ratio)
                     average_values.append(ratio)
 
                 axs[i].plot(snr_values, average_values, label=label)
@@ -233,3 +227,28 @@ def plot_confusion_matrix(y_true, y_pred, labels, snr, name):
     plt.savefig(file_path)
     plt.clf()
     plt.close()
+    
+def cumulant_fix_complex(cumulants):
+    # Gets the features vector from the cumulants
+    features_vec = []
+    for ii in range(len(cumulants)):
+        cum_abs = abs(cumulants[ii])
+        # initiate output
+        feats = []
+        for jj in range(len(cum_abs)):
+            feats.append((cum_abs[jj]))
+        features_vec.append(feats)
+
+    return np.array(features_vec)
+
+def cumulant_fix_real(cum_real):
+    # Gets the features vector from the cumulants
+    features_vec = []
+    for ii in range(len(cum_real)):
+        real_abs = abs(cum_real[ii])
+        # initiate output
+        feats = []
+        for jj in range(len(real_abs)):
+            feats.append((real_abs[jj]))
+        features_vec.append(feats)
+    return np.array(features_vec)
