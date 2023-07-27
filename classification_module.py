@@ -8,23 +8,21 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 
-
-
-
 def init_classification(samples, labels, snr, name, groups, easy_mode, train_tresh):
     
     # labeling = 'train_for_'+str(train_tresh)+'_SNR_'+name
     print('change')
     labeling = f"train_for_{train_tresh}_SNR_{name}"
-    x_train, x_test, y_train, y_test,snr_test = data_spliting(samples,labels,snr,train_tresh)
     
+    x_train, x_test, y_train, y_test,snr_test = data_spliting(samples,labels,snr,train_tresh)
+
     classifier = DecisionTreeClassifier(max_depth=8)
     classifier.fit(x_train, y_train)
     
     os.mkdir(labeling)
     print("Classify per SNR")
     accuracy_data = detection_per_snr(x_test, y_test, snr_test, classifier, labeling)
-    
+    # accuracy_data =1
     print("Classify per Label")
     detection_per_label(x_test, y_test, snr_test, classifier, groups, labeling)
     
@@ -34,7 +32,19 @@ def init_classification(samples, labels, snr, name, groups, easy_mode, train_tre
     
     return accuracy_data
 
-def data_spliting(samples,labels,snr,train_tresh):
+def prep_data(dataset):
+    dataset_prep = {}
+    dataset_prep['samples'] = cumulant_fix_complex(dataset['samples'])
+    dataset_prep['dx'] = cumulant_fix_complex(dataset['dx'])
+    dataset_prep['real'] = cumulant_fix_real(dataset['real'])
+    dataset_prep['imag'] = cumulant_fix_real(dataset['imag'])
+    dataset_prep['amplitude'] = cumulant_fix_real(dataset['amplitude'])
+    dataset_prep['phase'] = cumulant_fix_real(dataset['phase'])
+    dataset_prep['label'] = np.array(dataset['label'])
+    dataset_prep['snr'] = np.array(dataset['snr'])
+    return dataset_prep
+
+def data_spliting(samples, labels ,snr , train_tresh):
     
     if train_tresh>0:
         mask = snr>train_tresh
@@ -151,7 +161,7 @@ def plot_average_easy(samples, snr, labels, name):
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.set_xlabel('SNR')
         ax.set_ylabel('Average Value')
-        for label in unique_labels:
+        for i, label in enumerate(unique_labels):
             mask = labels == label
             average_values = []
             snr_values = np.unique(snr)
@@ -164,9 +174,11 @@ def plot_average_easy(samples, snr, labels, name):
                 ratio = np.log10(ratio)
                 average_values.append(ratio)
             color = cmap(i % num_colors)
+            if i==1:
+                color = cmap(12)
             ax.plot(snr_values, average_values, label=label, color=color)
         ax.set_title(f'Feature {feature_idx + 1}')
-        ax.yaxis.set_major_locator(MultipleLocator(0.25))
+        ax.yaxis.set_major_locator(MultipleLocator(0.5))
         ax.xaxis.set_major_locator(MultipleLocator(2))
         ax.grid(which='major')
         ax.legend()
@@ -175,6 +187,7 @@ def plot_average_easy(samples, snr, labels, name):
         print(f"Saved plot {file_path}")
         plt.clf()
         plt.close()
+    print('cv')
 
 def plot_average_hard(samples, snr, labels, groups, name):
     features = samples.shape[1]  # Number of features
@@ -251,4 +264,16 @@ def cumulant_fix_real(cum_real):
         for jj in range(len(real_abs)):
             feats.append((real_abs[jj]))
         features_vec.append(feats)
+    return np.array(features_vec)
+
+def remove_irelevant(cumulants):
+    features_vec = []
+    for ii in range(len(cumulants)):
+        cum_abs = abs(cumulants[ii])
+        # initiate output
+        feats = []
+        for jj in [2,3,4,5,7]:
+            feats.append((cum_abs[jj]))
+        features_vec.append(feats)
+
     return np.array(features_vec)
