@@ -9,7 +9,6 @@ from sklearn.metrics import confusion_matrix
 import seaborn as sns
 
 def init_classification(samples, labels, snr, name, groups, easy_mode, train_tresh):
-    
     # labeling = 'train_for_'+str(train_tresh)+'_SNR_'+name
     print('change')
     labeling = f"train_for_{train_tresh}_SNR_{name}"
@@ -110,7 +109,7 @@ def detection_per_snr(x_test, y_test, snr_test, classifier, name):
         accuracy_snr = accuracy_score(y_snr, y_pred_snr)
         accuracy_list.append(accuracy_snr)
         
-        if snr_val in [0,6,10]:
+        if snr_val in range(11):
             plot_confusion_matrix(y_snr, y_pred_snr, np.unique(y_snr), snr_val, name)
             
     return {"snr": unique_snr, "accuracy": accuracy_list, "name": name}
