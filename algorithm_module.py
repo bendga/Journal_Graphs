@@ -38,7 +38,7 @@ def start_amc():
 
     return samples,labels,snr,dataset_prep['features']
 
-def import_data(filepath):
+def import_data(filpath):
     with h5py.File(filepath, "r") as f:
         data = f["X"]
         modulation_onehot = f["Y"]
